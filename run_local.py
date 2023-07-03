@@ -16,7 +16,7 @@ WINDOW_SIZE = 3
 
 df = pd.read_csv(
     os.path.join("tests", "BTC-USD.csv")
-).head(500)
+)
 
 prep = SeriesPreprocess(column="Open", window_size=WINDOW_SIZE)
 
