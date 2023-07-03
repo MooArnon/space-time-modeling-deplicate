@@ -35,8 +35,8 @@ class DeepModeling(BaseModeling):
             self, 
             x: list[list[float]], 
             y: list[list[float]], 
-            preprocess_kwargs: dict = {"test_ratio": 0.1},
-            train_kwargs: dict = {"lr": 3e-3},
+            preprocess_kwargs: dict = None, 
+            train_kwargs: dict = None
     ) -> torch.nn.Module:
         """Train model, this can be adding the search function
 
@@ -58,6 +58,13 @@ class DeepModeling(BaseModeling):
         torch.nn.Module
             Trained model
         """
+        # If engine kwargs was None,
+        # Activate the default
+        if preprocess_kwargs is None:
+            preprocess_kwargs = {"test_ratio": 0.1}
+        if train_kwargs is None:
+            train_kwargs = {"lr": 3e-3}
+        
         # Sample test and train data
         x_train, y_train, x_test, y_test = self.sample_test_train(
             x,
@@ -84,7 +91,7 @@ class DeepModeling(BaseModeling):
             epochs: int = 50,
             batch_size: int = 32,
     ) -> torch.nn.Module :
-        """_summary_
+        """Element training in case of fine tuning
 
         Parameters
         ----------
@@ -113,7 +120,7 @@ class DeepModeling(BaseModeling):
         model: torch.nn.Module = self.classifier
         
         # Select loss fn
-        criterion = nn.MSELoss()
+        criterion = nn.HuberLoss()
         
         # Select optimizer
         optimizer = torch.optim.Adam(
@@ -160,7 +167,7 @@ class DeepModeling(BaseModeling):
             x_test,
             y_test,
     ) -> torch.nn.Module:
-        """_summary_
+        """Train in epoch
 
         Parameters
         ----------
@@ -189,9 +196,9 @@ class DeepModeling(BaseModeling):
         # Calculate the number of batches
         num_batches = (x_train.shape[0] + batch_size - 1) // batch_size
         
-        for batch_idx in range(num_batches):
+        #-------------------------- Train ------------------------------#
         
-            #----------------------------- Train ----------------------------#
+        for batch_idx in range(num_batches):
             
             # Set model object
             model.train()
@@ -220,24 +227,29 @@ class DeepModeling(BaseModeling):
             train_loss = loss.item()
             
         #-------------------------- Evaluation ------------------------------#
-        
+
         # Evaluate model
         with torch.no_grad():
             
-            # Predict output
-            pred = model(x_test)
+            # Predict the train
+            pred_train = model(x_train)
+            
+            # Predict validation
+            pred_val = model(x_test)
             
             # Calculate loss
-            val_loss = criterion(pred, y_test).item()
+            val_loss = criterion(pred_val, y_test).item()
             
             # Calculate r2
-            val_r2 = r2_score(y_test.tolist(), pred.tolist())
-                
+            train_r2 = r2_score(y_train.tolist(), pred_train.tolist())
+            val_r2 = r2_score(y_test.tolist(), pred_val.tolist())
+
         # Print progress
         print(
             f"  |--- Train Loss: {train_loss:.4f} | "
+            f"Train r2: {train_r2:.4f} | "
             f"Val Loss: {val_loss:.4f} | "
-            f"Val r2: {val_r2:.4f} | "
+            f"Val r2: {val_r2:.4f} | \n"
         )
     
     #------------------------------------------------------------------------#
