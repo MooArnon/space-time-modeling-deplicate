@@ -12,21 +12,39 @@ class SeriesPreprocess(BasePreprocessing):
             self, 
             column: str,
             mode: str = "csv", 
+            diff: bool = True,
             window_size: int=60, 
     ) -> None:
+        """Initiate the series processing
+
+        Parameters
+        ----------
+        column : str
+            Target column
+        mode : str, optional
+            Mode of source of data, 
+            by default "csv"
+        diff : bool, optional
+            If True, calculate diff and use it as an features
+            If False, Use the target column
+        window_size : int, optional
+            The size of input window, 
+            by default 60
+        """
         super().__init__(mode)
         
         self.window_size = window_size
         
         self.column = column
+        
+        self.diff = diff
     
     #------#
     # Main #
     #------------------------------------------------------------------------#
     def process(
             self, 
-            df: pd.DataFrame,
-            diff: bool = True
+            df: pd.DataFrame
     ) -> tuple[list[list[float]], list[list[float]]]:
         """Processing the data
 
@@ -34,9 +52,6 @@ class SeriesPreprocess(BasePreprocessing):
         ----------
         df : pd.DataFrame
             Target df
-        diff : bool, optional
-            If True, calculate diff and use it as an features
-            If False, Use the target column
 
         Returns
         -------
@@ -44,7 +59,7 @@ class SeriesPreprocess(BasePreprocessing):
             Return x and y
         """
         # Use the original DF as an input
-        if not diff:
+        if not self.diff:
             
             # Select column for series
             series = df[self.column].to_list()
