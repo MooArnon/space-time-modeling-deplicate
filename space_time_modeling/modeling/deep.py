@@ -100,7 +100,7 @@ class DeepModeling(BaseModeling):
         y_train : list[list[float]]
             Train label
         validation : tuple[list[list[float]], list[list[float]]]
-            Validation data
+            Validation data with (x, y) format.
         lr : float, optional
             Learning rate, 
             by default 0.003
@@ -121,6 +121,7 @@ class DeepModeling(BaseModeling):
         
         # Select loss fn
         criterion = nn.HuberLoss()
+        print(type(criterion))
         
         # Select optimizer
         optimizer = torch.optim.Adam(
@@ -158,14 +159,14 @@ class DeepModeling(BaseModeling):
     
     def train_in_epoch(
             self,
-            model,
-            optimizer,
-            criterion,
-            batch_size,
-            x_train,
-            y_train,
-            x_test,
-            y_test,
+            model: object,
+            optimizer: torch.optim.Optimizer,
+            criterion: torch.nn.modules.loss,
+            batch_size: int,
+            x_train: list[list[float]],
+            y_train: list[list[float]],
+            x_test: list[list[float]],
+            y_test: list[list[float]],
     ) -> torch.nn.Module:
         """Train in epoch
 
@@ -196,7 +197,7 @@ class DeepModeling(BaseModeling):
         # Calculate the number of batches
         num_batches = (x_train.shape[0] + batch_size - 1) // batch_size
         
-        #-------------------------- Train ------------------------------#
+        #------------------------------- Train ------------------------------#
         
         for batch_idx in range(num_batches):
             
