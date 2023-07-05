@@ -6,7 +6,7 @@ import os
 import math
 
 import pandas as pd
-import unittest
+import pytest
 
 #------#
 # Path #
@@ -35,7 +35,7 @@ x, y = prep.process(df=df)
 #---------------#
 # Test class #
 #------------#
-class ModelingTest(unittest.TestCase):
+class TestModelingTest:
     
     #--------------#
     # Main process #
@@ -44,23 +44,16 @@ class ModelingTest(unittest.TestCase):
     def test_train_test_sampling(self):
         """The train must not be in test"""
         # Initiate base model
-        model = BaseModeling()
-        
+        model = BaseModeling(export_path=None)
+
         # Sample
         train, test = model.sample(x)
-        
+
         train_set = set(map(tuple, train))
         test_set = set(map(tuple, test))
 
         intersection = train_set.intersection(test_set)
 
-        self.assertEqual(len(intersection), 0)
-        
-    
-#--------------#
-# Running test #
-#----------------------------------------------------------------------------#
+        assert not intersection
 
-if __name__ == '__main__':
-    
-    unittest.main()
+#----------------------------------------------------------------------------#
