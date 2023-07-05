@@ -4,8 +4,11 @@ import torch
 
 class BaseModeling:
     
-    def __init__(self) -> None:
-        pass
+    def __init__(self, export_path) -> None:
+        
+        self.export_path = f"{export_path}"
+        
+        self.export_name = ""
     
     #-------------#
     # Sample data #
@@ -65,6 +68,7 @@ class BaseModeling:
         
         return high, small
         
+        
     #-------#
     # Train #
     #------------------------------------------------------------------------#
@@ -77,30 +81,28 @@ class BaseModeling:
         """
         raise NotImplementedError("Child classes need to implement this fn")
     
+    
+    #-----------#
+    # Utilities #
     #------------------------------------------------------------------------#
-    
-    def train_element(
-            self, 
-            x: list[list[float]], 
-            y: list[list[float]]
-    ) -> torch.nn.Module:
-        """Created for train the model in the element training.
-        Be used in iterative search or fine tuning.
-        """
-        pass
-    
-    #------------------------------------------------------------------------#
-    
-    def predict(self, x: list[list[float]], model: torch.nn.Module) -> float:
-        """Predict label, in this case the value from classification.
-        """
+
+    def predict(self, x: list[list[float]]) -> float:
+        """Be used to generate the prediction
         
-        with torch.no_grad():
-            
-            model.eval()
-            
-            pred = model(x)
-            
-        return pred
+        For the naming guideline 
+
+        Parameters
+        ----------
+        x : list[list[float]]
+            x need to be the list[list[float]]
+
+        Returns
+        -------
+        float
+            return value as float
+        """
+        raise NotImplementedError("The child class need the prediction fn.")
+    
+    #------------------------------------------------------------------------#
         
 #----------------------------------------------------------------------------#

@@ -13,11 +13,11 @@ engine_dict ={
     "deep": DeepModeling
 }
 
-
 #---------------#
 # Call function #
 #----------------------------------------------------------------------------#
-def get_preprocess_engine(
+def get_model_engine(
+        export_path: str,
         engine: str = "deep", 
         **kwargs
 ) -> BaseModeling:
@@ -42,15 +42,19 @@ def get_preprocess_engine(
     classifier: object :
         Identify the classifier model. It must be torch.Module.
         At forward method must receive x: torch.tensor as an input.
-        If you are struck with the model architecture, please apply the
-        example at space_time_modeling/resource/deep_model/nn.py.
-        nn: object :
-            num_layers : int :
-                Number of linear layers
-                Default is 5
-            hidden_size : int :
-                Default is 1024
+        If you are struck with the model architecture, 
+        please apply the example at 
+        space_time_modeling/resource/deep_model/nn.py.
         
+        - NNModel: object :
+            - redundance: int :
+                The denominator of each linear layer.
+                Default is 4
+            - num_layers : int :
+                Number of linear layers.
+                Default is 5
+            - hidden_size : int :
+                Number of node as a hidden size.
+                Default is 1024
     """
-    
-    return engine_dict[engine](**kwargs)
+    return engine_dict[engine](export_path, **kwargs)

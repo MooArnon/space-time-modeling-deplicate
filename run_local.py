@@ -30,7 +30,12 @@ x, y = prep.process(df=df)
 #----------#
 # Modeling #
 #----------------------------------------------------------------------------#
-model_nn = NNModel(input_size=WINDOW_SIZE, hidden_size=1024, num_layers=4, redundance=1)
+model_nn = NNModel(
+    input_size=WINDOW_SIZE, 
+    hidden_size=1024, 
+    num_layers=4, 
+    redundance=1
+)
 
 engine = DeepModeling(model_nn)
 
@@ -39,3 +44,4 @@ engine.train(
     train_kwargs={"lr": 5e-5, "epochs":500}, 
     preprocess_kwargs={"test_ratio": 0.25}
 )
+

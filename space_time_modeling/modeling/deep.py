@@ -1,12 +1,17 @@
+import itertools
+
 import torch
 import torch.nn as nn
 from sklearn.metrics import r2_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 
 from ._base import BaseModeling
 
 class DeepModeling(BaseModeling):
-    
-    def __init__(self, classifier: object) -> None:
+        
+    def __init__(self, classifier: object, **kwargs) -> None:
         
         """Initiate the DeepModeling class. 
         
@@ -21,6 +26,8 @@ class DeepModeling(BaseModeling):
             from space_time_modeling/resources/deep_model which have
             2 type of model. You guys can use those code as a example.
         """
+        super(BaseModeling, self).__init__(**kwargs)
+        
         # Chose the instance
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
@@ -116,6 +123,7 @@ class DeepModeling(BaseModeling):
         torch.nn.Module
             Trained model
         """
+        
         # Initialize model
         model: torch.nn.Module = self.classifier
         
@@ -228,22 +236,17 @@ class DeepModeling(BaseModeling):
             train_loss = loss.item()
             
         #-------------------------- Evaluation ------------------------------#
-
-        # Evaluate model
-        with torch.no_grad():
-            
-            # Predict the train
-            pred_train = model(x_train)
-            
-            # Predict validation
-            pred_val = model(x_test)
-            
-            # Calculate loss
-            val_loss = criterion(pred_val, y_test).item()
-            
-            # Calculate r2
-            train_r2 = r2_score(y_train.tolist(), pred_train.tolist())
-            val_r2 = r2_score(y_test.tolist(), pred_val.tolist())
+        
+        # Predict the data
+        pred_train = self.predict(x_train, model, return_as="tensor")
+        pred_val = self.predict(x_test, model, return_as="tensor")
+        
+        # Calculate loss
+        val_loss = criterion(pred_val, y_test).item()
+        
+        # Calculate r2
+        train_r2 = r2_score(y_train.tolist(), pred_train.tolist())
+        val_r2 = r2_score(y_test.tolist(), pred_val.tolist())
 
         # Print progress
         print(
@@ -253,6 +256,84 @@ class DeepModeling(BaseModeling):
             f"Val r2: {val_r2:.4f} | \n"
         )
     
+    
+    #---------------------------#
+    # Evaluation and prediction #
     #------------------------------------------------------------------------#
     
-#------------------------------------------------------------------------#
+    @staticmethod
+    def predict(
+            x: list[list[float]], 
+            model: torch.nn.Module,
+            return_as: str = "list"
+    ) -> list[float]:
+        """Use feature for predict the label
+
+        Parameters
+        ----------
+        x : list[list[float]]
+            Features
+        model : torch.nn.Module
+            Target model
+        return_as: str :
+            the type of input
+
+        Returns
+        -------
+        list[float]
+            the output
+        """
+        x = x.detach().clone()
+        with torch.no_grad():
+
+            prediction: torch.Tensor = model(x)
+            
+        # Format of data
+        if return_as == "list":
+            return prediction.tolist()
+
+        elif return_as == "tensor":
+            return prediction
+    
+    #------------------------------------------------------------------------#
+    
+    def plot_graph(
+            self, 
+            actual_value: list[float], 
+            prediction_value: torch.Tensor
+    ) -> None:
+        """Generate the bar chart
+
+        Parameters
+        ----------
+        actual_value : list[list[float]]
+            The true value
+        prediction_value : list[list[float]]
+            the predicted value
+        """
+        # Convert tensor to list
+        prediction_value = prediction_value.tolist()
+        
+        # Join list of list
+        prediction_list = list(
+            itertools.chain.from_iterable(prediction_value)
+        )
+        
+        df = pd.DataFrame(
+            {
+                "prediction": prediction_list,
+                "true_value": actual_value
+            }
+        )
+        
+        df = df.melt(
+            value_vars=['y1', 'y2'], var_name='y', ignore_index=False
+        )
+        
+        sns.lineplot(data=df, x=df.index, y='value', hue='y')
+        
+        plt.savefig(f"{self.export_path}.png")
+        
+    #------------------------------------------------------------------------#
+    
+#----------------------------------------------------------------------------#
