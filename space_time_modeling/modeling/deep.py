@@ -161,6 +161,7 @@ class DeepModeling(BaseModeling):
                 x_test,
                 y_test,
             )
+        
         return model
                 
     #------------------------------------------------------------------------#
@@ -332,7 +333,7 @@ class DeepModeling(BaseModeling):
         
         sns.lineplot(data=df, x=df.index, y='value', hue='y')
         
-        plt.savefig(f"{self.export_path}.png")
+        plt.show()
         
     #------------------------------------------------------------------------#
     
