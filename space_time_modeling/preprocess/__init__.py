@@ -36,15 +36,15 @@ def get_preprocess_engine(
     deep
     ----
     Perform the ordinary deep learning model, neuron network based
-    column : str
+    - column : str
         Target column
-    mode : str, optional
+    - mode : str, optional
         Mode of source of data, 
         by default "csv"
-    diff : bool, optional
+    - diff : bool, optional
         If True, calculate diff and use it as an features
         If False, Use the target column
-    window_size : int, optional
+    - window_size : int, optional
         The size of input window, 
         by default 60
     """
