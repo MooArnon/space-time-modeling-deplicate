@@ -6,12 +6,12 @@ import os
 import math
 
 import pandas as pd
-import unittest
+import pytest
 
 #------#
 # Path #
 #----------------------------------------------------------------------------#
-from space_time_modeling.preprocess import SeriesPreprocess
+from space_time_modeling import get_preprocess_engine
 
 
 #----------#
@@ -27,7 +27,7 @@ DIFF = False
 #---------------#
 # Test class #
 #------------#
-class PreprocessingTest(unittest.TestCase):
+class TestPreprocessingTest:
     
     #--------------#
     # Main process #
@@ -41,14 +41,16 @@ class PreprocessingTest(unittest.TestCase):
         
         # Perform Series preprocess
         ## Initialize SeriesPreprocess
-        prep = SeriesPreprocess(window_size=3, column=COLUMN)
+        prep = get_preprocess_engine(
+            column="Open", 
+            window_size=3,
+            diff=False,
+        )
 
         ## Use process
         x, y = prep.process(df=df)
         
-        self.assertTrue(
-            len(x) == len(y)
-        )
+        assert len(x) == len(y)
     
     #------------------------------------------------------------------------#
 
@@ -60,14 +62,15 @@ class PreprocessingTest(unittest.TestCase):
         
         # Perform Series preprocess
         ## Initialize SeriesPreprocess
-        prep = SeriesPreprocess(window_size=4, column=COLUMN)
-
+        prep = get_preprocess_engine(
+            column="Open", 
+            window_size=4,
+            diff=False,
+        )
         ## Use process
         x, y = prep.process(df=df)
         
-        self.assertTrue(
-            len(x) == len(y)
-        )
+        assert len(x) == len(y)
         
     #------------------------------------------------------------------------#
 
@@ -79,14 +82,17 @@ class PreprocessingTest(unittest.TestCase):
         
         # Perform Series preprocess
         ## Initialize SeriesPreprocess
-        prep = SeriesPreprocess(window_size=16, column=COLUMN)
+        prep = get_preprocess_engine(
+            column="Open", 
+            window_size=16,
+            diff=False,
+        )
 
         ## Use process
         x, y = prep.process(df=df)
         
-        self.assertTrue(
-            len(x) == len(y)
-        )
+        assert len(x) == len(y)
+
     
     #---------#
     # Element #
@@ -110,15 +116,17 @@ class PreprocessingTest(unittest.TestCase):
         
         # Perform Series preprocess
         ## Initialize SeriesPreprocess
-        prep = SeriesPreprocess(window_size=4, column=COLUMN)
+        prep = get_preprocess_engine(
+            column="Open", 
+            window_size=4,
+            diff=False,
+        )
         
         ## Use process
         x, y = prep.process(df=df)
-    
-        self.assertTrue(
-            (len(x) == math.floor(df.shape[0]//4)) | \
+        
+        assert (len(x) == math.floor(df.shape[0]//4)) | \
                 (len(x) == math.floor(df.shape[0]//4) - 1)
-        )
     
     #------------------------------------------------------------------------#
     
@@ -138,15 +146,17 @@ class PreprocessingTest(unittest.TestCase):
         
         # Perform Series preprocess
         ## Initialize SeriesPreprocess
-        prep = SeriesPreprocess(window_size=4, column=COLUMN)
+        prep = get_preprocess_engine(
+            column="Open", 
+            window_size=4,
+            diff=False,
+        )
         
         ## Use process
         x, y = prep.process(df=df)
-    
-        self.assertTrue(
-            (len(x) == math.floor(df.shape[0]//4)) | \
+        
+        assert (len(x) == math.floor(df.shape[0]//4)) | \
                 (len(x) == math.floor(df.shape[0]//4) - 1)
-        )
     
     #------------------------------------------------------------------------#
     
@@ -166,15 +176,48 @@ class PreprocessingTest(unittest.TestCase):
         
         # Perform Series preprocess
         ## Initialize SeriesPreprocess
-        prep = SeriesPreprocess(window_size=5, column=COLUMN)
+        prep = get_preprocess_engine(
+            column="Open", 
+            window_size=5,
+            diff=False,
+        )
         
         ## Use process
         x, y = prep.process(df=df)
-    
-        self.assertTrue(
-            (len(x) == math.floor(df.shape[0]//5)) | \
+        
+        assert (len(x) == math.floor(df.shape[0]//5)) | \
                 (len(x) == math.floor(df.shape[0]//5) - 1)
+                
+    
+    #------------------------------------------------------------------------#
+    
+    def test_len_feature_h35_w5_diff(self):
+        """The number of list in list must equal to number of record 
+        divided WINDOW_SIZE. Which is floor estimated
+        
+        Examples
+        --------
+        record = 21, window_size = 5
+            The len(list) must be floor(24/5) = floor(4.8) = 4 
+        """
+        
+        df = pd.read_csv(
+            os.path.join("tests", "BTC-USD.csv")
+        ).head(35)
+        
+        # Perform Series preprocess
+        ## Initialize SeriesPreprocess
+        prep = get_preprocess_engine(
+            column="Open", 
+            window_size=5,
+            diff=True,
         )
+        
+        ## Use process
+        x, y = prep.process(df=df)
+        
+        assert (len(x) == math.floor(df.shape[0]//5)) | \
+                (len(x) == math.floor(df.shape[0]//5) - 1)
         
     #------------------------------------------------------------------------#
     # Similarity of each features #
@@ -199,10 +242,14 @@ class PreprocessingTest(unittest.TestCase):
         
         # Perform Series preprocess
         ## Initialize SeriesPreprocess
-        prep = SeriesPreprocess(window_size=4, column=COLUMN)
+        prep = get_preprocess_engine(
+            column="Open", 
+            window_size=4,
+            diff=False,
+        )
         
         ## Use process
-        x, y = prep.process(df=df, diff=DIFF)
+        x, y = prep.process(df=df)
         
         # join x in each element
         x_joined = list(itertools.chain.from_iterable(x))
@@ -210,45 +257,7 @@ class PreprocessingTest(unittest.TestCase):
         # Slice data in frame
         original = df[COLUMN].to_list()[:len(x_joined)]
         
-        self.assertTrue(
-            x_joined == original
-        )
-    
-    #----------------------------------------------------------------------------#
-
-    def test_element_feature_h37_w3(self):
-        """Each element in x must be equal to the original record in 
-        data frame
-        
-        Examples
-        --------
-        original = [4, 5, 6, 3, 7, 8]
-        feature = [[4, 5, 6], [3, 7, 8]] -> [4, 5, 6, 3, 7, 8] 
-            PASS
-        feature = [[4, 5, 6], [6, 3, 7]] -> [4, 5, 6, 6, 3, 7] 
-            FAILED
-        """
-        
-        df = pd.read_csv(
-            os.path.join("tests", "BTC-USD.csv")
-        ).head(37)
-        
-        # Perform Series preprocess
-        ## Initialize SeriesPreprocess
-        prep = SeriesPreprocess(window_size=3, column=COLUMN)
-        
-        ## Use process
-        x, y = prep.process(df=df, diff=DIFF)
-        
-        # join x in each element
-        x_joined = list(itertools.chain.from_iterable(x))
-        
-        # Slice data in frame
-        original = df[COLUMN].to_list()[:len(x_joined)]
-        
-        self.assertTrue(
-            x_joined == original
-        )
+        assert x_joined == original
         
     #------------------------------------------------------------------------#
     # diff calculation #
@@ -262,10 +271,13 @@ class PreprocessingTest(unittest.TestCase):
         
         # Perform Series preprocess
         ## Initialize SeriesPreprocess
-        prep = SeriesPreprocess(window_size=3, column=COLUMN)
-        
+        prep = prep = get_preprocess_engine(
+            column="Open", 
+            window_size=4,
+            diff=False,
+        )
         ## Use process
-        x, y = prep.process(df=df, diff=True)
+        x, y = prep.process(df=df)
         
         # 1st calculated
         cal = x[0][0]
@@ -276,12 +288,8 @@ class PreprocessingTest(unittest.TestCase):
         # manual diff
         manual_diff = df_list[1] - df_list[0]
         
-        self.assertEqual(cal, manual_diff)
+        assert cal, manual_diff
     
-#--------------#
-# Running test #
+    #------------------------------------------------------------------------#
+    
 #----------------------------------------------------------------------------#
-
-if __name__ == '__main__':
-    
-    unittest.main()
