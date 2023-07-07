@@ -8,17 +8,27 @@ import seaborn as sns
 import pandas as pd
 
 from ._base import BaseModeling
+from ..resources.deep_model.nn import NNModel
 
 class DeepModeling(BaseModeling):
+    
+    default_architecture = {
+        "nn": NNModel
+    }
         
-    def __init__(self, classifier: object, **kwargs) -> None:
+    def __init__(
+            self, 
+            regressor: object = None, 
+            architecture: torch.nn.Module = None,
+            **architecture_kwargs
+    ) -> None:
         
         """Initiate the DeepModeling class. 
         
         Parameters
         ----------
-        classifier: object :
-            The classifier object which can custom the architectures.
+        regressor: object :
+            The regressor object which can custom the architectures.
             Need to be wrote in torch object. The input layer must
             receive the list[list[float]] which is 
             [batch_size,window_size]. Then, return the float value.
@@ -26,23 +36,38 @@ class DeepModeling(BaseModeling):
             from space_time_modeling/resources/deep_model which have
             2 type of model. You guys can use those code as a example.
         """
-        super(BaseModeling, self).__init__(**kwargs)
-        
         # Chose the instance
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
         
-        # Get classifiers
-        self.classifier = classifier
+        # Use the default regressor
+        if (regressor is None) & (architecture is None):
+            
+            self.regressor = self.default_architecture["nn"]()
         
+        else:
+            # set regressors
+            self.regressor = regressor(**architecture_kwargs)
+    
+    #------------#  
+    # Properties #    
+    #------------------------------------------------------------------------#
+    
+    def set_regressor(self, regressor: object) -> torch.nn.Module:
+        
+        self.regressor = regressor
+    
+    #-------#
+    # Train #
     #------------------------------------------------------------------------#
     
     def train(
             self, 
             x: list[list[float]], 
             y: list[list[float]], 
-            preprocess_kwargs: dict = None, 
+            test_ratio: float = 0.15,
+            epochs: int = 100,
             train_kwargs: dict = None
     ) -> torch.nn.Module:
         """Train model, this can be adding the search function
@@ -53,9 +78,8 @@ class DeepModeling(BaseModeling):
             Input features
         y : list[list[float]]
             Input label
-        preprocess_kwargs : _type_, optional
-            Preprocessing keyword augments, 
-            by default {"test_ratio": 0.1}
+        test_ratio: float :
+            The ratio of test that will be sampled.
         train_kwargs : _type_, optional
             Training keyword augments , 
             by default {"lr": 3e-3}
@@ -67,8 +91,6 @@ class DeepModeling(BaseModeling):
         """
         # If engine kwargs was None,
         # Activate the default
-        if preprocess_kwargs is None:
-            preprocess_kwargs = {"test_ratio": 0.1}
         if train_kwargs is None:
             train_kwargs = {"lr": 3e-3}
         
@@ -76,14 +98,15 @@ class DeepModeling(BaseModeling):
         x_train, y_train, x_test, y_test = self.sample_test_train(
             x,
             y,
-            **preprocess_kwargs
+            test_ratio
         )
 
         # Return the trained model
         return self.train_element(
-            x_train, 
-            y_train, 
+            x_train = x_train, 
+            y_train = y_train, 
             validation=(x_test, y_test),
+            epochs = epochs,
             **train_kwargs
         )
     
@@ -94,8 +117,8 @@ class DeepModeling(BaseModeling):
             x_train: list[list[float]], 
             y_train: list[list[float]], 
             validation: tuple[list[list[float]], list[list[float]]],
+            epochs: int = 100,
             lr: float = 0.003,
-            epochs: int = 50,
             batch_size: int = 32,
     ) -> torch.nn.Module :
         """Element training in case of fine tuning
@@ -108,12 +131,12 @@ class DeepModeling(BaseModeling):
             Train label
         validation : tuple[list[list[float]], list[list[float]]]
             Validation data with (x, y) format.
-        lr : float, optional
-            Learning rate, 
-            by default 0.003
         epochs : int, optional
             Number of epochs, 
             by default 50
+        lr : float, optional
+            Learning rate, 
+            by default 0.003
         batch_size : int, optional
             Batch size, 
             by default 32
@@ -125,11 +148,10 @@ class DeepModeling(BaseModeling):
         """
         
         # Initialize model
-        model: torch.nn.Module = self.classifier
+        model: torch.nn.Module = self.regressor
         
         # Select loss fn
         criterion = nn.HuberLoss()
-        print(type(criterion))
         
         # Select optimizer
         optimizer = torch.optim.Adam(
@@ -144,6 +166,8 @@ class DeepModeling(BaseModeling):
         # Extract x and y test
         x_test = torch.tensor(validation[0])
         y_test = torch.tensor(validation[1])
+        
+        print(f"\n{model}")
         
         # Loop over epochs
         for epoch in range(epochs):
@@ -335,6 +359,30 @@ class DeepModeling(BaseModeling):
         
         plt.show()
         
+    #-----------#
+    # Utilities #
+    #------------------------------------------------------------------------#
+    
+    def get_nn_model(self, architecture: str, **kwargs) -> torch.nn.Module:
+        """Get the build in architecture
+
+        Parameters
+        ----------
+        architecture : str
+            if `nn`, use NNModel from space_time_modeling/resource/deep/nn.py
+
+        Returns
+        -------
+        torch.Tensor
+            The regressor module
+        """
+        
+        if architecture == "nn":
+            
+            regressor = NNModel(**kwargs)
+            
+        return regressor
+    
     #------------------------------------------------------------------------#
     
 #----------------------------------------------------------------------------#

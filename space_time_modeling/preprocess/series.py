@@ -10,10 +10,10 @@ class SeriesPreprocess(BasePreprocessing):
     
     def __init__(
             self, 
-            column: str,
-            mode: str = "csv", 
-            diff: bool = True,
-            window_size: int=60, 
+            column: str, 
+            diff: bool,
+            window_size: int, 
+            mode: str = "csv"
     ) -> None:
         """Initiate the series processing
 

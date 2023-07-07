@@ -6,7 +6,7 @@ import os
 import pandas as pd
 
 from space_time_modeling import get_preprocess_engine
-from space_time_modeling import DeepModeling
+from space_time_modeling import get_model_engine
 from space_time_modeling.resources.deep_model import NNModel
 
 #--------------#
@@ -35,19 +35,22 @@ x, y = prep.process(df=df)
 #----------------------------------------------------------------------------#
 # Simple NN model
 model_nn = NNModel(
-    input_size=WINDOW_SIZE, 
-    hidden_size=1024, 
-    num_layers=4, 
+    input_size=WINDOW_SIZE,
+    hidden_size=1024,
+    num_layers=4,
     redundance=1
 )
 
-# Get modeling engine
-engine = DeepModeling(model_nn)
+model_engine = get_model_engine(
+    engine="deep",
+    architecture = "nn"
+)
 
 # Train it
-engine.train(
+model_engine.train(
     x, y, 
-    train_kwargs={"lr": 5e-5, "epochs":500}, 
-    preprocess_kwargs={"test_ratio": 0.25}
+    epochs=10,
+    train_kwargs={"lr": 5e-5},
+    test_ratio = 0.25
 )
 

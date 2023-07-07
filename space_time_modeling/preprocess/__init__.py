@@ -9,7 +9,15 @@ from space_time_modeling.preprocess.series import SeriesPreprocess
 #----------------------------------------------------------------------------#
 
 engine_dict ={
-    "series": SeriesPreprocess
+    "series": {
+        "engine": SeriesPreprocess,
+        "default_param": {
+            "column": "price",
+            "mode": "csv",
+            "diff": False,
+            "window_size": 45
+        }
+    }
 }
 
 #---------------#
@@ -48,5 +56,10 @@ def get_preprocess_engine(
         The size of input window, 
         by default 60
     """
-    
-    return engine_dict[engine](**kwargs)
+    default_param = engine_dict[engine]["default_param"]
+
+    new_kwargs = {
+        key: default_param[key] if key not in kwargs.keys() else kwargs[key]
+        for key in default_param.keys()
+    }
+    return engine_dict[engine]["engine"](**new_kwargs)
