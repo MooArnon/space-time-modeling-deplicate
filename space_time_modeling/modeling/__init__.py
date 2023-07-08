@@ -10,14 +10,13 @@ from ._base import BaseModeling
 #----------------------------------------------------------------------------#
 
 engine_dict ={
-    "deep": DeepModeling
+    "deep": DeepModeling,
 }
 
 #---------------#
 # Call function #
 #----------------------------------------------------------------------------#
-def get_model_engine(
-        export_path: str,
+def get_model_engine(                                                   
         engine: str = "deep", 
         **kwargs
 ) -> BaseModeling:
@@ -26,35 +25,31 @@ def get_model_engine(
     Parameters
     ==========
     engine: str, optional
-        The modeling engine, 
-        by default "deep"
+        `deep` as a default. select the deep leaning algorithm.
     **kwargs:
         The parameter of each engine.
 
     Returns
     =======
     BaseModeling
-
-    deep
-    ----
-    Perform the ordinary time series preprocess. Just sliding
-    the interested column in data frame.
-    classifier: object :
-        Identify the classifier model. It must be torch.Module.
-        At forward method must receive x: torch.tensor as an input.
-        If you are struck with the model architecture, 
-        please apply the example at 
-        space_time_modeling/resource/deep_model/nn.py.
-        
-        - NNModel: object :
-            - redundance: int :
-                The denominator of each linear layer.
-                Default is 4
-            - num_layers : int :
-                Number of linear layers.
-                Default is 5
-            - hidden_size : int :
-                Number of node as a hidden size.
-                Default is 1024
+    
+    kwargs
+    ======
+    If engine `deep` was selected
+    architecture: str :
+        The architecture of deep model.
+        `nn` for stacked linear layer.
+        -input_size : int :
+            Size of input, might be window_size or number of features
+        -hidden_size : int :
+            Number of node at the first layer.
+            Default is 256
+        -num_layers : int :
+            Number of linear layers.
+            Default is 5
+        -redundance: int :
+            The reduction denominator of each layer.
+            Default is 4
+    
     """
-    return engine_dict[engine](export_path, **kwargs)
+    return engine_dict[engine](**kwargs)

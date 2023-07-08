@@ -1,15 +1,10 @@
 import math
+import os
 
 import torch
 
 class BaseModeling:
-    
-    def __init__(self, export_path) -> None:
-        
-        self.export_path = f"{export_path}"
-        
-        self.export_name = ""
-    
+
     #-------------#
     # Sample data #
     #------------------------------------------------------------------------#
@@ -18,7 +13,7 @@ class BaseModeling:
             self,
             x: list[list[float]],
             y: list[list[float]],
-            **Kwargs
+            test_ratio: float = 0.15,
     ) -> tuple[
         list[list[float]], list[list[float]], 
         list[list[float]], list[list[float]]
@@ -28,10 +23,10 @@ class BaseModeling:
             Length of x and y is {len(x)}, {len(y)}; respectively """
         
         # Sample x
-        x_train, x_test = self.sample(x, **Kwargs)
+        x_train, x_test = self.sample(x, test_ratio)
         
         # Sample y
-        y_train, y_test = self.sample(y, **Kwargs)
+        y_train, y_test = self.sample(y, test_ratio)
         
         return x_train, y_train, x_test, y_test
         
@@ -74,13 +69,20 @@ class BaseModeling:
     #------------------------------------------------------------------------#
     
     def train(self):
-        """Need to be created for train model.
+        """Need to be created for train.
         Each engine need to return its model.
         If there are any fine tuning, create the separated 
         train_element method.
         """
         raise NotImplementedError("Child classes need to implement this fn")
     
+    #------------------------------------------------------------------------#
+    
+    def save_model(self):
+        """Need to be created for save model.
+        Each engine need to return save model.
+        """
+        raise NotImplementedError("Child classes need to implement this fn")
     
     #-----------#
     # Utilities #
