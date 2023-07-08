@@ -14,7 +14,7 @@ import seaborn as sns
 import pandas as pd
 
 from space_time_modeling.modeling._base import BaseModeling
-from space_time_modeling.resources.deep_model.nn import NNModel, LSTMModel
+from space_time_modeling.modeling.resources import NNModel, LSTMModel
 
 #-------#
 # Class #
