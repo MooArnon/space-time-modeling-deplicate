@@ -43,14 +43,17 @@ model_nn = NNModel(
 
 model_engine = get_model_engine(
     engine="deep",
-    architecture = "nn"
+    architecture = "nn",
+    input_size = WINDOW_SIZE
 )
 
 # Train it
-model_engine.train(
-    x, y, 
-    epochs=10,
+model_engine.modeling(
+    x, 
+    y, 
+    result_name = "NN_TEST_MODEL",
+    epochs=100,
     train_kwargs={"lr": 5e-5},
-    test_ratio = 0.25
+    test_ratio = 0.15
 )
 

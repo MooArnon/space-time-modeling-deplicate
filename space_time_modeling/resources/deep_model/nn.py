@@ -21,8 +21,8 @@ class NNModel(nn.Module):
             self, 
             input_size: int = 5,
             hidden_size: int = 256,
-            num_layers: int = 5, 
-            redundance: int = 4,
+            num_layers: int = 3, 
+            redundance: int = 2,
     ) -> None:
         """Initiate class
 

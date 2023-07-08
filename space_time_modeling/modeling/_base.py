@@ -1,4 +1,5 @@
 import math
+import os
 
 import torch
 
@@ -68,13 +69,20 @@ class BaseModeling:
     #------------------------------------------------------------------------#
     
     def train(self):
-        """Need to be created for train model.
+        """Need to be created for train.
         Each engine need to return its model.
         If there are any fine tuning, create the separated 
         train_element method.
         """
         raise NotImplementedError("Child classes need to implement this fn")
     
+    #------------------------------------------------------------------------#
+    
+    def save_model(self):
+        """Need to be created for save model.
+        Each engine need to return save model.
+        """
+        raise NotImplementedError("Child classes need to implement this fn")
     
     #-----------#
     # Utilities #
