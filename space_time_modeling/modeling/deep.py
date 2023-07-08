@@ -11,12 +11,13 @@ import seaborn as sns
 import pandas as pd
 
 from ._base import BaseModeling
-from ..resources.deep_model.nn import NNModel
+from ..resources.deep_model.nn import NNModel, LSTMModel
 
 class DeepModeling(BaseModeling):
     
     architecture_dict = {
-        "nn": NNModel
+        "nn": NNModel,
+        "lstm": LSTMModel
     }
         
     def __init__(
@@ -50,12 +51,12 @@ class DeepModeling(BaseModeling):
         if (regressor is None) & (architecture is None):
             
             # Use default regressor
-            self.regressor = self.default_architecture["nn"](input_size)
+            self.regressor = self.architecture_dict["nn"](input_size)
         
         # If architecture determined
         elif (regressor is None) & (architecture is not None):
             
-            regressor = self.architecture_dict["nn"]
+            regressor = self.architecture_dict[architecture]
             
             # Set regressors as a architecture
             self.regressor = regressor(input_size, **architecture_kwargs)

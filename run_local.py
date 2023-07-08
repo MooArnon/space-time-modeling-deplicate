@@ -51,7 +51,7 @@ model_engine = get_model_engine(
 model_engine.modeling(
     x, 
     y, 
-    result_name = "NN_TEST_MODEL",
+    result_name = "RNN",
     epochs=100,
     train_kwargs={"lr": 5e-5},
     test_ratio = 0.15
