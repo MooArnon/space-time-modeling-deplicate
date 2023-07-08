@@ -19,7 +19,7 @@ class NNModel(nn.Module):
     
     def __init__(
             self, 
-            input_size: int = 5,
+            input_size: int,
             hidden_size: int = 256,
             num_layers: int = 3, 
             redundance: int = 2,
@@ -82,6 +82,58 @@ class NNModel(nn.Module):
         
         return x
 
+    #------------------------------------------------------------------------#
+    
+#----------------------------------------------------------------------------#
+
+
+#---------------------------#
+# Stacked Recurrent network #
+#------------------------------------------------------------------------#
+class LSTMModel(nn.Module):
+    def __init__(
+            self, 
+            input_size: int, 
+            hidden_size: int = 256, 
+            num_layers: int = 2
+    ):
+        super(LSTMModel, self).__init__()
+        self.hidden_size = hidden_size
+        
+        self.rnn = nn.LSTM(
+            input_size, 
+            hidden_size, 
+            batch_first=True, 
+            num_layers = num_layers
+        )
+        self.fc = nn.Linear(hidden_size, 1)
+
+    #------------------------------------------------------------------------#
+    
+    def forward(self, x):
+        
+        print(x.shape)
+        
+        batch_size = x.size(0)
+        
+        print(batch_size)
+        
+        hidden = self.init_hidden(batch_size)
+        
+        print(hidden.shape)
+
+        out, hidden = self.rnn(x.unsqueeze(0), hidden)
+        
+        # Use the output of the last time step as input for the linear layer
+        out = self.fc(out[:, -1, :])
+        
+        return out
+
+    #------------------------------------------------------------------------#
+    
+    def init_hidden(self, batch_size):
+        return torch.zeros(1, batch_size, self.hidden_size)
+    
     #------------------------------------------------------------------------#
 
 #----------------------------------------------------------------------------#

@@ -1,11 +1,15 @@
+#--------#
+# Import #
+#----------------------------------------------------------------------------#
 import math
 
 import pandas as pd
-import numpy as np
 
 from space_time_modeling.preprocess import BasePreprocessing
 
-
+#----------------------------#
+# Series preprocessing class #
+#----------------------------------------------------------------------------#
 class SeriesPreprocess(BasePreprocessing):
     
     def __init__(
@@ -21,22 +25,25 @@ class SeriesPreprocess(BasePreprocessing):
         ----------
         column : str
             Target column
-        mode : str, optional
-            Mode of source of data, 
-            by default "csv"
         diff : bool, optional
             If True, calculate diff and use it as an features
             If False, Use the target column
         window_size : int, optional
             The size of input window, 
             by default 60
+        mode : str, optional
+            Mode of source of data, 
+            by default "csv"
         """
         super().__init__(mode)
         
+        # Window size
         self.window_size = window_size
         
+        # Target column
         self.column = column
         
+        # Diff activation
         self.diff = diff
     
     #------#
@@ -83,6 +90,8 @@ class SeriesPreprocess(BasePreprocessing):
         x = self.feature_engineer(series)
 
         # Get label
+        # `fit` indicates that all data are fit in window
+        # The error will not occurs from labeling
         y, fit = self.labeling(series)
 
         # Slice the last element from x
@@ -104,11 +113,9 @@ class SeriesPreprocess(BasePreprocessing):
 
         Parameters
         ----------
-        df : pd.DataFrame
-            Input data frame
-        columns : str
-            Interested column
-
+        series: pd.Series :
+            Input series, which slide from data frame
+            
         Returns
         -------
         list[list[float]]
@@ -124,8 +131,8 @@ class SeriesPreprocess(BasePreprocessing):
 
         Parameters
         ----------
-        series : float :
-            The input series of data
+        series: pd.Series :
+            Input series, which slide from data frame
             
         Returns
         -------
@@ -164,8 +171,8 @@ class SeriesPreprocess(BasePreprocessing):
 
         Parameters
         ----------
-        df : pd.DataFrame :
-            Target data frame
+        series: pd.Series :
+            Input series, which slide from data frame
 
         Returns
         -------
@@ -218,5 +225,7 @@ class SeriesPreprocess(BasePreprocessing):
             Number of features, the len(list).
         """
         return math.floor(len(series) // self.window_size)
+    
+    #------------------------------------------------------------------------#
 
 #----------------------------------------------------------------------------#
