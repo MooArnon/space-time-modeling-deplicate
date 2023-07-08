@@ -58,7 +58,7 @@ class BasePreprocessing:
     # Utilities #
     #------------------------------------------------------------------------#
     
-    def get_data(self, mode: str="csv",  path: str=None) -> pd.DataFrame:
+    def get_data(self, path: str=None) -> pd.DataFrame:
         """Get data from sources
 
         Parameters
@@ -71,10 +71,15 @@ class BasePreprocessing:
         pd.DataFrame
             The result as pandas data frame
         """
-        
+        # Check if mode is csv
         if self.mode == "csv":
 
             df = pd.read_csv(path)
+        
+        # Check if mode is excel
+        elif self.mode == "excel":
+            
+            df = pd.read_excel(path)
             
         return df
     

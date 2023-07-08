@@ -1,1 +1,1 @@
-from .nn import NNModel
+from .nn import NNModel, LSTMModel

@@ -7,12 +7,16 @@ import pandas as pd
 
 from space_time_modeling import get_preprocess_engine
 from space_time_modeling import get_model_engine
-from space_time_modeling.resources.deep_model import NNModel
+
+#----------#
+# Variable #
+#----------------------------------------------------------------------------#
+
+WINDOW_SIZE = 10
 
 #--------------#
 # Process data #
 #----------------------------------------------------------------------------#
-WINDOW_SIZE = 10
 
 # Read data
 df = pd.read_csv(
@@ -24,6 +28,7 @@ prep = get_preprocess_engine(
     column="Open", 
     window_size=WINDOW_SIZE,
     diff=False,
+    engine="indicator"
 )
 
 # Calculate x and y
@@ -33,13 +38,8 @@ x, y = prep.process(df=df)
 #----------#
 # Modeling #
 #----------------------------------------------------------------------------#
-# Simple NN model
-model_nn = NNModel(
-    input_size=WINDOW_SIZE,
-    hidden_size=1024,
-    num_layers=4,
-    redundance=1
-)
+# Get engine #
+#------------#
 
 model_engine = get_model_engine(
     engine="deep",
@@ -47,13 +47,17 @@ model_engine = get_model_engine(
     input_size = WINDOW_SIZE
 )
 
-# Train it
+#----------------------------------------------------------------------------#
+# Train #
+#-------#
+
 model_engine.modeling(
     x, 
     y, 
-    result_name = "NN_TEST_MODEL",
+    result_name = "RNN",
     epochs=100,
     train_kwargs={"lr": 5e-5},
     test_ratio = 0.15
 )
 
+#----------------------------------------------------------------------------#
