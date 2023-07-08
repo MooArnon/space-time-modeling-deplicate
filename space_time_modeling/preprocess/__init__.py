@@ -23,11 +23,12 @@ engine_dict ={
 #---------------#
 # Call function #
 #----------------------------------------------------------------------------#
+
 def get_preprocess_engine(
         engine: str = "series", 
         **kwargs
 ) -> BasePreprocessing:
-    """_summary_
+    """Be used for select the preprocessing engine
 
     Parameters
     ==========
@@ -41,9 +42,9 @@ def get_preprocess_engine(
     =======
     BasePreprocessing
     
-    deep
-    ----
-    Perform the ordinary deep learning model, neuron network based
+    kwargs
+    ======
+    If engine `series` was selected
     - column : str
         Target column
     - mode : str, optional
@@ -55,9 +56,34 @@ def get_preprocess_engine(
     - window_size : int, optional
         The size of input window, 
         by default 60
+        
+    Raise
+    =====
+    ValueError
+        If user select the wrong engine
+    
+    Example
+    =======
+    >>> import pandas as pd
+    >>> from spacetime_modeling import get_preprocess_engine
+    >>> prep = get_preprocess_engine(column="Open", diff=False,
+    >>>     window_size=5
+    >>> )
+    >>> df = pd.read_csv("PATH", "TO", "CSV")
+    >>> x, y = prep.process(df=df)
     """
+    # Raise something if engine is not proper
+    if engine not in engine_dict.keys():
+        
+        raise ValueError(
+            f""" engine {engine} is not suitable. 
+            You need to choose one from this list {list(engine_dict.keys())}.
+            """
+        )
+        
     default_param = engine_dict[engine]["default_param"]
 
+    # Combine the unassigned parameters
     new_kwargs = {
         key: default_param[key] if key not in kwargs.keys() else kwargs[key]
         for key in default_param.keys()
