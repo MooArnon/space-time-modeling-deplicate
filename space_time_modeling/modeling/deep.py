@@ -1,4 +1,7 @@
 import itertools
+import os
+from typing import Union
+import datetime
 
 import torch
 import torch.nn as nn
@@ -8,17 +11,28 @@ import seaborn as sns
 import pandas as pd
 
 from ._base import BaseModeling
+from ..resources.deep_model.nn import NNModel
 
 class DeepModeling(BaseModeling):
+    
+    architecture_dict = {
+        "nn": NNModel
+    }
         
-    def __init__(self, classifier: object, **kwargs) -> None:
+    def __init__(
+            self, 
+            input_size: int,
+            regressor: object = None, 
+            architecture: str = None,
+            **architecture_kwargs
+    ) -> None:
         
         """Initiate the DeepModeling class. 
         
         Parameters
         ----------
-        classifier: object :
-            The classifier object which can custom the architectures.
+        regressor: object :
+            The regressor object which can custom the architectures.
             Need to be wrote in torch object. The input layer must
             receive the list[list[float]] which is 
             [batch_size,window_size]. Then, return the float value.
@@ -26,23 +40,105 @@ class DeepModeling(BaseModeling):
             from space_time_modeling/resources/deep_model which have
             2 type of model. You guys can use those code as a example.
         """
-        super(BaseModeling, self).__init__(**kwargs)
-        
         # Chose the instance
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
         
-        # Get classifiers
-        self.classifier = classifier
+        # If nothing was indicated
+        # Use the default regressor
+        if (regressor is None) & (architecture is None):
+            
+            # Use default regressor
+            self.regressor = self.default_architecture["nn"](input_size)
         
+        # If architecture determined
+        elif (regressor is None) & (architecture is not None):
+            
+            regressor = self.architecture_dict["nn"]
+            
+            # Set regressors as a architecture
+            self.regressor = regressor(input_size, **architecture_kwargs)
+        
+        # Custom architecture
+        elif regressor is not None:
+            
+            self.regressor = regressor
+            
+        # Initialize time 
+        current_datetime = datetime.datetime.now()
+        
+        self.time_running = current_datetime.strftime("%Y%m%d_%H%M%S")
+        
+    #------#
+    # Main #
+    #------------------------------------------------------------------------#
+    
+    def modeling(
+            self,
+            x: list[list[float]], 
+            y: list[list[float]], 
+            result_name: str,
+            test_ratio: float = 0.15,
+            epochs: int = 100,
+            train_kwargs: dict = None,
+    ) -> None:
+        
+        # Sample test and train data
+        x_train, y_train, x_test, y_test = self.sample_test_train(
+            x,
+            y,
+            test_ratio
+        )
+        
+        # Train model
+        model = self.train(
+            x_train = x_train, 
+            y_train = y_train, 
+            validation=(x_test, y_test),
+            epochs=epochs,
+            train_kwargs=train_kwargs
+        )
+        
+        # Save model
+        self.save_model(model, result_name)
+        
+        # Get the model's architecture information
+        model_architecture = str(model)
+
+        # Save the architecture to a text file
+        with open(
+            f'{os.path.join(self.export_dir, "architecture.txt")}', 'w'    
+        ) as file:
+            file.write(model_architecture)
+        
+        model_eval: torch.nn.Module = torch.load(self.export_path)
+        
+        model_eval.eval()
+        
+        test_pred = self.predict(x_test, model_eval)
+        
+        test_actual = [value[0] for value in x_test]
+        
+        # Evaluate model
+        self.plot_graph(
+            actual_value=test_actual,
+            prediction_value=test_pred,
+            plot_name="validation_plot"
+        )
+        
+        
+        
+    #-------#
+    # Train #
     #------------------------------------------------------------------------#
     
     def train(
             self, 
-            x: list[list[float]], 
-            y: list[list[float]], 
-            preprocess_kwargs: dict = None, 
+            x_train: list[list[float]], 
+            y_train: list[list[float]], 
+            validation: tuple[list[list[float]], list[list[float]]],
+            epochs: int = 100,
             train_kwargs: dict = None
     ) -> torch.nn.Module:
         """Train model, this can be adding the search function
@@ -53,9 +149,10 @@ class DeepModeling(BaseModeling):
             Input features
         y : list[list[float]]
             Input label
-        preprocess_kwargs : _type_, optional
-            Preprocessing keyword augments, 
-            by default {"test_ratio": 0.1}
+        validation : tuple[list[list[float]], list[list[float]]]
+            Validation data with (x, y) format.
+        test_ratio: float :
+            The ratio of test that will be sampled.
         train_kwargs : _type_, optional
             Training keyword augments , 
             by default {"lr": 3e-3}
@@ -64,26 +161,14 @@ class DeepModeling(BaseModeling):
         -------
         torch.nn.Module
             Trained model
-        """
-        # If engine kwargs was None,
-        # Activate the default
-        if preprocess_kwargs is None:
-            preprocess_kwargs = {"test_ratio": 0.1}
-        if train_kwargs is None:
-            train_kwargs = {"lr": 3e-3}
-        
-        # Sample test and train data
-        x_train, y_train, x_test, y_test = self.sample_test_train(
-            x,
-            y,
-            **preprocess_kwargs
-        )
+        """      
 
         # Return the trained model
         return self.train_element(
-            x_train, 
-            y_train, 
-            validation=(x_test, y_test),
+            x_train = x_train, 
+            y_train = y_train, 
+            validation=validation,
+            epochs = epochs,
             **train_kwargs
         )
     
@@ -94,8 +179,8 @@ class DeepModeling(BaseModeling):
             x_train: list[list[float]], 
             y_train: list[list[float]], 
             validation: tuple[list[list[float]], list[list[float]]],
+            epochs: int = 100,
             lr: float = 0.003,
-            epochs: int = 50,
             batch_size: int = 32,
     ) -> torch.nn.Module :
         """Element training in case of fine tuning
@@ -108,12 +193,12 @@ class DeepModeling(BaseModeling):
             Train label
         validation : tuple[list[list[float]], list[list[float]]]
             Validation data with (x, y) format.
-        lr : float, optional
-            Learning rate, 
-            by default 0.003
         epochs : int, optional
             Number of epochs, 
             by default 50
+        lr : float, optional
+            Learning rate, 
+            by default 0.003
         batch_size : int, optional
             Batch size, 
             by default 32
@@ -125,25 +210,16 @@ class DeepModeling(BaseModeling):
         """
         
         # Initialize model
-        model: torch.nn.Module = self.classifier
+        model: torch.nn.Module = self.regressor
         
         # Select loss fn
         criterion = nn.HuberLoss()
-        print(type(criterion))
         
         # Select optimizer
         optimizer = torch.optim.Adam(
             model.parameters(), 
             lr=lr,
         )
-        
-        # Force data in to the device
-        x_train = torch.tensor(x_train).to(self.device)
-        y_train = torch.tensor(y_train).to(self.device)
-        
-        # Extract x and y test
-        x_test = torch.tensor(validation[0])
-        y_test = torch.tensor(validation[1])
         
         # Loop over epochs
         for epoch in range(epochs):
@@ -158,8 +234,8 @@ class DeepModeling(BaseModeling):
                 batch_size,
                 x_train,
                 y_train,
-                x_test,
-                y_test,
+                validation[0],
+                validation[1],
             )
         
         return model
@@ -203,9 +279,17 @@ class DeepModeling(BaseModeling):
         torch.Module
             Trained model
         """
+        # Force data in to the device
+        x_train = torch.tensor(x_train).to(self.device)
+        y_train = torch.tensor(y_train).to(self.device)
+        
+        # Extract x and y test
+        x_test = torch.tensor(x_test)
+        y_test = torch.tensor(y_test)
+        
         # Calculate the number of batches
         num_batches = (x_train.shape[0] + batch_size - 1) // batch_size
-        
+    
         #------------------------------- Train ------------------------------#
         
         for batch_idx in range(num_batches):
@@ -264,7 +348,7 @@ class DeepModeling(BaseModeling):
     
     @staticmethod
     def predict(
-            x: list[list[float]], 
+            x: Union[torch.tensor, list[list[float]]], 
             model: torch.nn.Module,
             return_as: str = "list"
     ) -> list[float]:
@@ -284,6 +368,10 @@ class DeepModeling(BaseModeling):
         list[float]
             the output
         """
+        if isinstance(x, list):
+            
+            x = torch.tensor(x)
+            
         x = x.detach().clone()
         with torch.no_grad():
 
@@ -301,7 +389,8 @@ class DeepModeling(BaseModeling):
     def plot_graph(
             self, 
             actual_value: list[float], 
-            prediction_value: torch.Tensor
+            prediction_value: Union[list[float], torch.Tensor],
+            plot_name: str
     ) -> None:
         """Generate the bar chart
 
@@ -312,8 +401,9 @@ class DeepModeling(BaseModeling):
         prediction_value : list[list[float]]
             the predicted value
         """
-        # Convert tensor to list
-        prediction_value = prediction_value.tolist()
+        if isinstance(prediction_value, torch.Tensor):
+            # Convert tensor to list
+            prediction_value = prediction_value.tolist()
         
         # Join list of list
         prediction_list = list(
@@ -328,13 +418,83 @@ class DeepModeling(BaseModeling):
         )
         
         df = df.melt(
-            value_vars=['y1', 'y2'], var_name='y', ignore_index=False
+            value_vars=['prediction', 'true_value'], 
+            var_name='y', 
+            ignore_index=False
         )
         
         sns.lineplot(data=df, x=df.index, y='value', hue='y')
         
-        plt.show()
+        plt.savefig(f'{os.path.join(self.export_dir, plot_name)}.png')
         
+    #-------------#
+    # Exportation #
+    #------------------------------------------------------------------------#
+    
+    def save_model(self, model: torch.nn.Module, export_name: str) -> None:
+        """Export model
+
+        Parameters
+        ----------
+        model : torch.nn.Module
+            Trained model
+        export_dir : str
+            The directory of exportation
+        """
+        # Get current directory
+        current_dir = os.listdir()
+        
+        # Create `result` directory if this path is not constructed
+        if "result" not in current_dir:
+            
+            os.mkdir("result")
+        
+        export_format = f"{export_name}__{self.time_running}"
+            
+        os.mkdir(
+            os.path.join("result", export_format)
+        )
+        
+        self.export_dir = os.path.join(
+            "result", 
+            f"{export_format}"
+        )
+        
+        self.export_path = os.path.join(
+            self.export_dir, 
+            f"{export_format}.pth"
+        )
+            
+        torch.save(
+            model, 
+            os.path.join(self.export_path)
+        )
+            
+    #-----------#
+    # Utilities #
+    #------------------------------------------------------------------------#
+    
+    @staticmethod
+    def get_nn_model(architecture: str, **kwargs) -> torch.nn.Module:
+        """Get the build in architecture
+
+        Parameters
+        ----------
+        architecture : str
+            if `nn`, use NNModel from space_time_modeling/resource/deep/nn.py
+
+        Returns
+        -------
+        torch.Tensor
+            The regressor module
+        """
+        
+        if architecture == "nn":
+            
+            regressor = NNModel(**kwargs)
+            
+        return regressor
+    
     #------------------------------------------------------------------------#
     
 #----------------------------------------------------------------------------#

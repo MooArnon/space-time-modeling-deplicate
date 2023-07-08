@@ -44,7 +44,7 @@ class TestModelingTest:
     def test_train_test_sampling(self):
         """The train must not be in test"""
         # Initiate base model
-        model = BaseModeling(export_path=None)
+        model = BaseModeling()
 
         # Sample
         train, test = model.sample(x)
