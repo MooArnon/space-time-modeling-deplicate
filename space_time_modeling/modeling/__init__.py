@@ -1,7 +1,6 @@
 #--------#
 # Import #
 #----------------------------------------------------------------------------#
-from ..resources.deep_model import *
 from .deep import DeepModeling
 from ._base import BaseModeling
 
