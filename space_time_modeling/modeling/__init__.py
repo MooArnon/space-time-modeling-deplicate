@@ -1,8 +1,8 @@
 #--------#
 # Import #
 #----------------------------------------------------------------------------#
-from .deep import DeepModeling
-from ._base import BaseModeling
+from space_time_modeling.modeling.deep import DeepModeling
+from space_time_modeling.modeling._base import BaseModeling
 
 #--------#
 # Engine #

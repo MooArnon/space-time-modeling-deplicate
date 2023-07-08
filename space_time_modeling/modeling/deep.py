@@ -1,3 +1,6 @@
+#--------#
+# Import #
+#----------------------------------------------------------------------------#
 import itertools
 import os
 from typing import Union
@@ -10,8 +13,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-from ._base import BaseModeling
-from ..resources.deep_model.nn import NNModel, LSTMModel
+from space_time_modeling.modeling._base import BaseModeling
+from space_time_modeling.resources.deep_model.nn import NNModel, LSTMModel
+
+#-------#
+# Class #
+#----------------------------------------------------------------------------#
 
 class DeepModeling(BaseModeling):
     
