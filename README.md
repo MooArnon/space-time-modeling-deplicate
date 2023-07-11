@@ -6,7 +6,7 @@ or, just use that code to run it.
 PS. I always update the feature of this package. In the future, it can be run without the manual assignation, just use one function.
 
 # How to
-## Installing
+## Installation
 Just paste the below script into the terminal or command line. <br>
 `pip install git+https://github.com/MooArnon/space-time-modeling.git`
 ## Preprocessing
