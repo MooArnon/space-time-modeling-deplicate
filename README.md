@@ -1,9 +1,9 @@
 # space-time-modeling
 I developed the `space_time_modeling` for the regression problems. <br>
-You guys can perform the modeling by following the instruction at `run_local.py`, <br>
-or, just use that code to run it.
+You guys can perform the modelling by following the instruction at `run_local.py`, <br>
+or use that code to run it.
 
-PS. I always update the feature of this package. In the future, it can be run without the manual assignation, just use one function.
+PS. I constantly update the feature of this package. In the future, it can be run without manual assignation, using one function.
 
 # How to
 ## Installation
