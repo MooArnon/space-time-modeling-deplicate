@@ -22,7 +22,7 @@ class NNModel(nn.Module):
             input_size: int,
             hidden_size: int = 256,
             num_layers: int = 3, 
-            redundance: int = 2,
+            redundance: int = 1,
     ) -> None:
         """Initiate class
 
@@ -92,19 +92,18 @@ class NNModel(nn.Module):
 #------------------------------------------------------------------------#
 class LSTMModel(nn.Module):
     def __init__(
-            self, 
+            self,
             input_size: int, 
-            hidden_size: int = 256, 
-            num_layers: int = 2
+            hidden_size: int= 256, 
+            num_layers: int= 2
     ):
         super(LSTMModel, self).__init__()
-        self.hidden_size = hidden_size
         
         self.rnn = nn.LSTM(
             input_size, 
             hidden_size, 
             batch_first=True, 
-            num_layers = num_layers
+            num_layers = num_layers,
         )
         self.fc = nn.Linear(hidden_size, 1)
 
@@ -112,27 +111,15 @@ class LSTMModel(nn.Module):
     
     def forward(self, x):
         
-        print(x.shape)
+        # x = torch.unsqueeze(x, dim=2)
         
-        batch_size = x.size(0)
+        out, _ = self.rnn(x)
         
-        print(batch_size)
-        
-        hidden = self.init_hidden(batch_size)
-        
-        print(hidden.shape)
+        # out = torch.mean(out, dim=-1)
 
-        out, hidden = self.rnn(x.unsqueeze(0), hidden)
-        
-        # Use the output of the last time step as input for the linear layer
-        out = self.fc(out[:, -1, :])
+        out = self.fc(out)
         
         return out
-
-    #------------------------------------------------------------------------#
-    
-    def init_hidden(self, batch_size):
-        return torch.zeros(1, batch_size, self.hidden_size)
     
     #------------------------------------------------------------------------#
 

@@ -195,7 +195,7 @@ class SeriesPreprocess(BasePreprocessing):
             try:
 
                 # Append the label in y
-                y.append([series[index_end+1]])
+                y.append([series[index_end]])
 
                 # All y is fitted in number of features
                 fit = True
