@@ -8,10 +8,11 @@ import datetime
 
 import torch
 import torch.nn as nn
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import numpy as np
 
 from space_time_modeling.modeling._base import BaseModeling
 from space_time_modeling.modeling.resources import NNModel, LSTMModel
@@ -120,22 +121,42 @@ class DeepModeling(BaseModeling):
         ) as file:
             file.write(model_architecture)
         
+        # Load model for evaluate
         model_eval: torch.nn.Module = torch.load(self.export_path)
-        
         model_eval.eval()
         
+        # Predict train and test
         test_pred = self.predict(x_test, model_eval)
+        train_pred = self.predict(x_train, model_eval)
         
+        # Get the first element
+        # Be used to create plot
         test_actual = [value[0] for value in x_test]
         
         # Evaluate model
+        ## Eval metrics
+        signal_report = self.get_evaluate(
+            x_test,
+            y_test,
+            y_train,
+            train_pred,
+            test_pred,
+            return_report=True,
+        )
+        
+        # Create report metrics
+        pd.DataFrame(
+            signal_report
+        ).transpose().to_excel(
+            os.path.join(self.export_dir, "metrics_score.xlsx")
+        )
+        
+        ## Plot graph
         self.plot_graph(
             actual_value=test_actual,
             prediction_value=test_pred,
             plot_name="validation_plot"
         )
-        
-        
         
     #-------#
     # Train #
@@ -169,8 +190,7 @@ class DeepModeling(BaseModeling):
         -------
         torch.nn.Module
             Trained model
-        """      
-
+        """
         # Return the trained model
         return self.train_element(
             x_train = x_train, 
@@ -298,7 +318,9 @@ class DeepModeling(BaseModeling):
         # Calculate the number of batches
         num_batches = (x_train.shape[0] + batch_size - 1) // batch_size
     
-        #------------------------------- Train ------------------------------#
+        #-------#
+        # Train #
+        #--------------------------------------------------------------------#
         
         for batch_idx in range(num_batches):
             
@@ -328,7 +350,9 @@ class DeepModeling(BaseModeling):
             # Update loss value on each epoch
             train_loss = loss.item()
             
-        #-------------------------- Evaluation ------------------------------#
+        #---------#
+        # Predict #
+        #--------------------------------------------------------------------#
         
         # Predict the data
         pred_train = self.predict(x_train, model, return_as="tensor")
@@ -337,22 +361,102 @@ class DeepModeling(BaseModeling):
         # Calculate loss
         val_loss = criterion(pred_val, y_test).item()
         
-        # Calculate r2
-        train_r2 = r2_score(y_train.tolist(), pred_train.tolist())
-        val_r2 = r2_score(y_test.tolist(), pred_val.tolist())
-
-        # Print progress
         print(
             f"  |--- Train Loss: {train_loss:.4f} | "
-            f"Train r2: {train_r2:.4f} | "
             f"Val Loss: {val_loss:.4f} | "
-            f"Val r2: {val_r2:.4f} | \n"
+        )
+        
+        self.get_evaluate(
+            x_test.tolist(),
+            y_test.tolist(),
+            y_train.tolist(),
+            pred_train.tolist(),
+            pred_val.tolist()
         )
     
     
     #---------------------------#
     # Evaluation and prediction #
     #------------------------------------------------------------------------#
+    # Main #
+    #------#
+    
+    def get_evaluate(
+            self, 
+            x_test: list[list[float]],
+            y_test: list[float],
+            y_train: list[float],
+            pred_train: list[float],
+            pred_val: list[float],
+            return_report: bool = False
+    ) -> dict:
+        """_summary_
+
+        Parameters
+        ----------
+        x_test : list[list[float]]
+            test features
+        y_test : list[float]
+            test label
+        y_train : list[float]
+            train label
+        pred_train : list[float]
+            predicted train
+        pred_val : list[float]
+            predicted validate
+        return_report : bool, optional
+            return the dict of report
+            , by default False
+
+        Returns
+        -------
+        dict
+            report
+        """
+        # Calculate signal and confidence ratio
+        confidence_validate, signal_validate = self.signal(
+            x_test, y_test
+        )
+        confidence_pred, signal_pred = self.signal(
+            x_test, pred_val
+        )
+
+        # Classification report
+        signal_report = classification_report(
+            signal_validate, 
+            signal_pred, 
+            output_dict=True,
+            zero_division= np.nan
+        )
+
+        # Calculate r2
+        train_r2 = r2_score(y_train, pred_train)
+        val_r2 = r2_score(y_test, pred_val)
+
+        # Print progress
+        print(
+            f"  |--- Train r2: {train_r2:.4f} | "
+            f"Val r2: {val_r2:.4f} | "
+        )
+
+        print(
+            f"  |--- Val signal accuracy {signal_report['accuracy']:.4f} |"
+            f"Val buy f1: {signal_report['buy']['f1-score']:.4f} | "
+            f"Val sell f1: {signal_report['sell']['f1-score']:.4f} |\n"
+        )
+
+        # Create report
+        if return_report:
+            
+            # Insert addition values
+            signal_report["train_r2"] = train_r2
+            signal_report["validate_r2"] = val_r2
+
+            return signal_report
+    
+    #------------------------------------------------------------------------#
+    # Prediction #
+    #------------#
     
     @staticmethod
     def predict(
@@ -393,6 +497,61 @@ class DeepModeling(BaseModeling):
             return prediction
     
     #------------------------------------------------------------------------#
+    # Evaluation #
+    #------------#
+    # Metric #
+    #--------#
+    
+    def signal(
+            self, 
+            x: list[list[float]], 
+            y: list[float]
+    ) -> tuple[list[float], list[str]]:
+        """Be used to calculate the signal and its confidences
+
+        Parameters
+        ----------
+        x : list[list[float]]
+            List of feature
+        y : list[float]
+            List of label
+
+        Returns
+        -------
+        tuple[list[float], list[str]] :
+            list of confidence ratio
+            list of signal
+        """
+        # Variable
+        signal_lst = []
+        confidence_lst = []
+        
+        # Loop over number of x
+        for idx in range(len(x)):
+
+            # Indicate the YESTERDAY and CURRENT price
+            value_previous = x[idx][-1]
+            value_current = y[idx][-1]
+            
+            # Calculate the differences
+            diff = value_current - value_previous
+            
+            # Append sell signal if the diff is negative
+            if diff < 0 :
+                signal_lst.append("sell")
+            
+            # Append uy signal if the diff is positive
+            else:
+                signal_lst.append("buy")
+            
+            # Calculate the confidence ratio
+            confidence_lst.append(diff/value_previous)
+            
+        return confidence_lst, signal_lst
+    
+    #------------------------------------------------------------------------#
+    # Visual #
+    #--------#
     
     def plot_graph(
             self, 

@@ -12,7 +12,7 @@ from space_time_modeling import get_model_engine
 # Variable #
 #----------------------------------------------------------------------------#
 
-WINDOW_SIZE = 10
+WINDOW_SIZE = 5
 
 #--------------#
 # Process data #
@@ -28,7 +28,7 @@ prep = get_preprocess_engine(
     column="Open", 
     window_size=WINDOW_SIZE,
     diff=False,
-    engine="indicator"
+    engine="series"
 )
 
 # Calculate x and y
@@ -44,7 +44,9 @@ x, y = prep.process(df=df)
 model_engine = get_model_engine(
     engine="deep",
     architecture = "nn",
-    input_size = WINDOW_SIZE
+    input_size = WINDOW_SIZE,
+    num_layers = 3,
+    hidden_size = 128
 )
 
 #----------------------------------------------------------------------------#
@@ -54,9 +56,9 @@ model_engine = get_model_engine(
 model_engine.modeling(
     x, 
     y, 
-    result_name = "RNN",
+    result_name = "NN",
     epochs=100,
-    train_kwargs={"lr": 5e-5},
+    train_kwargs={"lr": 3e-5},
     test_ratio = 0.15
 )
 
