@@ -128,6 +128,56 @@ class LSTMModel(nn.Module):
 #---------#
 # N-BEATS #
 #----------------------------------------------------------------------------#
+# Main #
+#------#
+class NBEATS(nn.Module):
+    def __init__(
+        self, 
+        input_size: int, 
+        hidden_size: int = 256, 
+        num_stacks: int = 2, 
+        num_blocks: int = 2, 
+        forecast_steps: int = 1
+    ):
+        """The N-BEATs model, torch model.
+        
+        Parameters
+        ----------
+        input_size : int :
+            window size
+        hidden_size : int :
+            The hidden size, 
+            by default 256
+        num_stacks : int :
+            The number of stacked nn layers, 
+            by default 2
+        num_blocks : int :
+            The number of n-beats blocks, 
+            by default 2
+        forecast_steps : int :
+            the step of forecast, 
+            by default 1
+        """
+        super(NBEATS, self).__init__()
+        
+        self.blocks = nn.ModuleList(
+            [NBEATSBlock(
+                input_size, 
+                hidden_size, 
+                num_blocks, 
+                forecast_steps
+            ) for _ in range(num_stacks)]
+        )
+    
+    #------------------------------------------------------------------------#
+    
+    def forward(self, x):
+        stack_outputs = [block(x) for block in self.blocks]
+        stack_outputs = torch.stack(stack_outputs, dim=1)
+
+        return torch.mean(stack_outputs, dim=1)
+
+#----------------------------------------------------------------------------#
 # Element blocks #
 #----------------#
 class NBEATSBlock(nn.Module):
@@ -138,7 +188,7 @@ class NBEATSBlock(nn.Module):
         num_blocks: int, 
         forecast_steps: int
     ):
-        """The element block 
+        """The element block of n-beats
 
         Parameters
         ----------
@@ -211,62 +261,7 @@ class NBEATSBlock(nn.Module):
         fc1_output = torch.relu(self.fc1(flattened))
         
         return self.fc2(fc1_output)
-
-#----------------------------------------------------------------------------#
-# Main NBEATS #
-#-------------#
-class NBEATS(nn.Module):
-    def __init__(
-        self, 
-        input_size: int, 
-        hidden_size: int = 256, 
-        num_stacks: int = 2, 
-        num_blocks: int = 2, 
-        forecast_steps: int = 1
-    ):
-        """The N-BEATs model, torch model.
-        
-        
-
-        Parameters
-        ----------
-        input_size : int :
-            _description_
-        hidden_size : int :
-            _description_, 
-            by default 256
-        num_stacks : int :
-            _description_, 
-            by default 2
-        num_blocks : int :
-            _description_, 
-            by default 2
-        forecast_steps : int :
-            _description_, 
-            by default 1
-        """
-        super(NBEATS, self).__init__()
-        
-        self.blocks = nn.ModuleList(
-            [NBEATSBlock(
-                input_size, 
-                hidden_size, 
-                num_blocks, 
-                forecast_steps
-            ) for _ in range(num_stacks)]
-        )
     
     #------------------------------------------------------------------------#
-    
-    def forward(self, x):
-        stack_outputs = []
-        
-        for block in self.blocks:
-            stack_outputs.append(block(x))
-        
-        stack_outputs = torch.stack(stack_outputs, dim=1)
-        
-        # Combine stack outputs
-        final_forecast = torch.mean(stack_outputs, dim=1)  
-        
-        return final_forecast
+
+#----------------------------------------------------------------------------#

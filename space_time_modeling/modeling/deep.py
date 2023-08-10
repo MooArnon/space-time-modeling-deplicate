@@ -45,6 +45,8 @@ class DeepModeling(BaseModeling):
         
         Parameters
         ----------
+        input_size: int
+            window size for series modeling.
         regressor: object :
             The regressor object which can custom the architectures.
             Need to be wrote in torch object. The input layer must
@@ -53,6 +55,8 @@ class DeepModeling(BaseModeling):
             IF NOT DEFINED, this function will call the default model
             from space_time_modeling/resources/deep_model which have
             2 type of model. You guys can use those code as a example.
+        architecture: str :
+            For the build-in architecture
         """
         # Chose the instance
         self.device = torch.device(
