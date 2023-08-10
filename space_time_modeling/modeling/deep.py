@@ -15,7 +15,11 @@ import pandas as pd
 import numpy as np
 
 from space_time_modeling.modeling._base import BaseModeling
-from space_time_modeling.modeling.resources import NNModel, LSTMModel
+from space_time_modeling.modeling.resources import (
+    NNModel, 
+    LSTMModel,
+    NBEATS
+)
 
 #-------#
 # Class #
@@ -25,7 +29,8 @@ class DeepModeling(BaseModeling):
     
     architecture_dict = {
         "nn": NNModel,
-        "lstm": LSTMModel
+        "lstm": LSTMModel,
+        "n-beats": NBEATS
     }
         
     def __init__(

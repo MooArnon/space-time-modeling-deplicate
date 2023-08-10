@@ -12,7 +12,7 @@ from space_time_modeling import get_model_engine
 # Variable #
 #----------------------------------------------------------------------------#
 
-WINDOW_SIZE = 5
+WINDOW_SIZE = 15
 
 #--------------#
 # Process data #
@@ -22,6 +22,8 @@ WINDOW_SIZE = 5
 df = pd.read_csv(
     os.path.join("tests", "BTC-USD.csv")
 )
+
+print(df.shape)
 
 # Get preprocessing engine
 prep = get_preprocess_engine(
@@ -43,10 +45,9 @@ x, y = prep.process(df=df)
 
 model_engine = get_model_engine(
     engine="deep",
-    architecture = "nn",
+    architecture = "n-beats",
     input_size = WINDOW_SIZE,
-    num_layers = 3,
-    hidden_size = 128
+    hidden_size = 512
 )
 
 #----------------------------------------------------------------------------#
@@ -56,10 +57,10 @@ model_engine = get_model_engine(
 model_engine.modeling(
     x, 
     y, 
-    result_name = "NN",
+    result_name = "n-beats",
     epochs=100,
     train_kwargs={"lr": 3e-5},
-    test_ratio = 0.15
+    test_ratio = 0.15,
 )
 
 #----------------------------------------------------------------------------#
