@@ -15,7 +15,11 @@ import pandas as pd
 import numpy as np
 
 from space_time_modeling.modeling._base import BaseModeling
-from space_time_modeling.modeling.resources import NNModel, LSTMModel
+from space_time_modeling.modeling.resources import (
+    NNModel, 
+    LSTMModel,
+    NBEATS
+)
 
 #-------#
 # Class #
@@ -25,7 +29,8 @@ class DeepModeling(BaseModeling):
     
     architecture_dict = {
         "nn": NNModel,
-        "lstm": LSTMModel
+        "lstm": LSTMModel,
+        "n-beats": NBEATS
     }
         
     def __init__(
@@ -40,6 +45,8 @@ class DeepModeling(BaseModeling):
         
         Parameters
         ----------
+        input_size: int
+            window size for series modeling.
         regressor: object :
             The regressor object which can custom the architectures.
             Need to be wrote in torch object. The input layer must
@@ -48,6 +55,8 @@ class DeepModeling(BaseModeling):
             IF NOT DEFINED, this function will call the default model
             from space_time_modeling/resources/deep_model which have
             2 type of model. You guys can use those code as a example.
+        architecture: str :
+            For the build-in architecture
         """
         # Chose the instance
         self.device = torch.device(

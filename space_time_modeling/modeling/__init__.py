@@ -50,6 +50,21 @@ def get_model_engine(
             - redundance: int :
                 The reduction denominator of each layer.
                 Default is 4
+        - `n-beats` for N-BEATS.
+            - input_size : int :
+                window size
+            - hidden_size : int :
+                The hidden size, 
+                by default 256
+            - num_stacks : int :
+                The number of stacked nn layers, 
+                by default 2
+            - num_blocks : int :
+                The number of n-beats blocks, 
+                by default 2
+            - forecast_steps : int :
+                the step of forecast, 
+                by default 1
 
     Raise
     =====
