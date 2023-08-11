@@ -5,6 +5,7 @@ import itertools
 import os
 from typing import Union
 import datetime
+import json
 
 import torch
 import torch.nn as nn
@@ -88,6 +89,11 @@ class DeepModeling(BaseModeling):
         
         self.time_running = current_datetime.strftime("%Y%m%d_%H%M%S")
         
+        # Kwarg
+        self.arch_param = architecture_kwargs
+        
+        self.input_shape = input_size
+        
     #------#
     # Main #
     #------------------------------------------------------------------------#
@@ -108,6 +114,7 @@ class DeepModeling(BaseModeling):
             y,
             test_ratio
         )
+        self.train_kwargs = train_kwargs
         
         # Train model
         model = self.train(
@@ -625,7 +632,7 @@ class DeepModeling(BaseModeling):
             
             os.mkdir("result")
         
-        export_format = f"{export_name}__{self.time_running}"
+        export_format = f"{export_name}_{self.time_running}"
             
         os.mkdir(
             os.path.join("result", export_format)
@@ -645,32 +652,22 @@ class DeepModeling(BaseModeling):
             model, 
             os.path.join(self.export_path)
         )
-            
-    #-----------#
-    # Utilities #
-    #------------------------------------------------------------------------#
-    
-    @staticmethod
-    def get_nn_model(architecture: str, **kwargs) -> torch.nn.Module:
-        """Get the build in architecture
-
-        Parameters
-        ----------
-        architecture : str
-            if `nn`, use NNModel from space_time_modeling/resource/deep/nn.py
-
-        Returns
-        -------
-        torch.Tensor
-            The regressor module
-        """
         
-        if architecture == "nn":
+        
+        self.arch_param["window_size"] = self.input_shape
             
-            regressor = NNModel(**kwargs)
+        self.arch_param["train_kwarg"] = self.train_kwargs
+        
+        # Export json
+        arch_param = json.dumps(self.arch_param, indent=4)
+        
+        with open(
+            os.path.join(self.export_dir, "structure.json"),
+            "w"
+        ) as outfile:
             
-        return regressor
-    
+            outfile.write(arch_param)
+        
     #------------------------------------------------------------------------#
     
 #----------------------------------------------------------------------------#
